@@ -1,10 +1,10 @@
 name: Daily HF Model Crawl
 
 on:
-  # 毎日 UTC 00:00 (JST 09:00) に実行
+  # Run daily at UTC 00:00 (JST 09:00)
   schedule:
     - cron: "0 0 * * *"
-  # 手動実行（デバッグ用）
+  # Manual trigger for debugging
   workflow_dispatch:
 
 jobs:
