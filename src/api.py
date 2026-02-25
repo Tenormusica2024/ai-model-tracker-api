@@ -17,6 +17,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from db import get_supabase
 
+# クロール対象の1タグあたり最大モデル数（crawl_hf.py の LIMIT_PER_TAG=200 + バッファ）
+_MODELS_PER_TAG = 250
+# クロール対象のパイプラインタグ数（crawl_hf.py の TARGET_PIPELINE_TAGS と同期）
+_N_PIPELINE_TAGS = 4
+
 app = FastAPI(
     title="AI Model Tracker API",
     description="Track trending AI models on HuggingFace with historical data",
@@ -49,9 +54,10 @@ def get_trending(
     sb = get_supabase()
 
     cutoff = (date.today() - timedelta(days=days)).isoformat()
-    # days × limit でスナップショット行数を上限設定（例: 7日×20件 = 上限140行）
-    # モデル数が増えても OOM / タイムアウトを防ぐ
-    row_cap = days * limit
+    # pipeline_tag 指定なし = 全タグが対象。タグ数分のモデルを見込んで行数上限を設定
+    # days × (1タグのモデル数上限) × (対象タグ数) でウィンドウ内の全スナップを取得できる
+    tag_multiplier = 1 if pipeline_tag else _N_PIPELINE_TAGS
+    row_cap = days * _MODELS_PER_TAG * tag_multiplier
 
     query = (
         sb.table("model_snapshots")
@@ -98,7 +104,7 @@ def get_new(
     limit: int = Query(20, ge=1, le=100, description="Max results"),
 ):
     """
-    Return models first seen within the past N days, sorted by likes descending.
+    Return models first seen within the past N days, sorted by first_seen_at descending.
     """
     cutoff = (date.today() - timedelta(days=days)).isoformat()
 
