@@ -6,14 +6,15 @@ HF Models API 日次クロールスクリプト
 保存先: Supabase (環境変数 SUPABASE_URL / SUPABASE_KEY)
 """
 
-import os
+import sys
 import time
 import logging
-from datetime import date, datetime
-from typing import Optional
+from datetime import date
 
 import requests
-from supabase import create_client, Client
+from supabase import Client
+
+from db import get_supabase
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,16 +33,10 @@ TARGET_PIPELINE_TAGS = [
 # 1タグあたりの取得件数（急上昇モデルを検出するには上位で十分）
 LIMIT_PER_TAG = 200
 
-# arXiv API は 3秒 delay 推奨
-ARXIV_DELAY_SEC = 3
-
 HF_API_BASE = "https://huggingface.co/api"
 
-
-def get_supabase() -> Client:
-    url = os.environ["SUPABASE_URL"]
-    key = os.environ["SUPABASE_KEY"]
-    return create_client(url, key)
+# crawl() でエラー率がこの閾値を超えた場合に非ゼロ終了（GitHub Actions でアラートを出すため）
+ERROR_RATE_THRESHOLD = 0.1
 
 
 def fetch_hf_models(pipeline_tag: str, limit: int = LIMIT_PER_TAG) -> list[dict]:
@@ -142,10 +137,21 @@ def crawl(pipeline_tags: list[str] = TARGET_PIPELINE_TAGS) -> None:
         # タグ間に短いインターバル（HF APIへの配慮）
         time.sleep(1)
 
+    total_processed = total_models + total_errors
+    error_rate = total_errors / total_processed if total_processed > 0 else 0.0
     logger.info(
         f"Crawl complete: date={today}, "
-        f"models={total_models}, errors={total_errors}"
+        f"models={total_models}, errors={total_errors}, "
+        f"error_rate={error_rate:.1%}"
     )
+
+    # エラー率が閾値を超えた場合は非ゼロ終了して GitHub Actions にアラートを出す
+    if error_rate > ERROR_RATE_THRESHOLD:
+        logger.error(
+            f"Error rate {error_rate:.1%} exceeded threshold "
+            f"{ERROR_RATE_THRESHOLD:.1%} — exiting with code 1"
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":

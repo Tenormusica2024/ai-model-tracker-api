@@ -5,15 +5,17 @@ FastAPI application serving trending/new model data from Supabase.
 Endpoints:
   GET /models/trending  - Top models by likes growth over N days
   GET /models/new       - Recently first-seen models
-  GET /models/{id}/history - Snapshot history for a specific model
+  GET /models/{model_id}/history - Snapshot history for a specific model
 """
 
-import os
+from collections import defaultdict
+from datetime import date, timedelta
 from typing import Optional
 
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from supabase import create_client, Client
+
+from db import get_supabase
 
 app = FastAPI(
     title="AI Model Tracker API",
@@ -27,12 +29,6 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
-
-
-def get_supabase() -> Client:
-    url = os.environ["SUPABASE_URL"]
-    key = os.environ["SUPABASE_KEY"]
-    return create_client(url, key)
 
 
 @app.get("/health")
@@ -52,25 +48,25 @@ def get_trending(
     """
     sb = get_supabase()
 
-    # Fetch snapshots from last N+1 days to compute delta
+    cutoff = (date.today() - timedelta(days=days)).isoformat()
+    # days × limit でスナップショット行数を上限設定（例: 7日×20件 = 上限140行）
+    # モデル数が増えても OOM / タイムアウトを防ぐ
+    row_cap = days * limit
+
     query = (
         sb.table("model_snapshots")
         .select("model_id, snapshot_date, likes, pipeline_tag")
+        .gte("snapshot_date", cutoff)
         .order("snapshot_date", desc=False)
+        .limit(row_cap)
     )
     if pipeline_tag:
         query = query.eq("pipeline_tag", pipeline_tag)
 
-    # Limit date range on Supabase side using gte filter
-    from datetime import date, timedelta
-    cutoff = (date.today() - timedelta(days=days)).isoformat()
-    query = query.gte("snapshot_date", cutoff)
-
     resp = query.execute()
     rows = resp.data
 
-    # Group by model_id and compute delta (latest - earliest likes in window)
-    from collections import defaultdict
+    # model_id ごとにスナップショットをまとめて likes の増分（最新 - 最古）を計算
     model_snapshots: dict[str, list] = defaultdict(list)
     for row in rows:
         model_snapshots[row["model_id"]].append(row)
@@ -104,7 +100,6 @@ def get_new(
     """
     Return models first seen within the past N days, sorted by likes descending.
     """
-    from datetime import date, timedelta
     cutoff = (date.today() - timedelta(days=days)).isoformat()
 
     sb = get_supabase()
