@@ -14,6 +14,7 @@ from datetime import date
 import requests
 from supabase import Client
 
+from config import TARGET_PIPELINE_TAGS, LIMIT_PER_TAG
 from db import get_supabase
 
 logging.basicConfig(
@@ -21,17 +22,6 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-# 取得するパイプラインタグ（= タスク種別）
-TARGET_PIPELINE_TAGS = [
-    "text-generation",
-    "text2text-generation",
-    "image-text-to-text",  # multimodal VLM
-    "text-to-image",
-]
-
-# 1タグあたりの取得件数（急上昇モデルを検出するには上位で十分）
-LIMIT_PER_TAG = 200
 
 HF_API_BASE = "https://huggingface.co/api"
 

@@ -15,12 +15,13 @@ from typing import Optional
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from config import TARGET_PIPELINE_TAGS, LIMIT_PER_TAG
 from db import get_supabase
 
-# クロール対象の1タグあたり最大モデル数（crawl_hf.py の LIMIT_PER_TAG=200 + バッファ）
-_MODELS_PER_TAG = 250
-# クロール対象のパイプラインタグ数（crawl_hf.py の TARGET_PIPELINE_TAGS と同期）
-_N_PIPELINE_TAGS = 4
+# crawl_hf.py の LIMIT_PER_TAG に合わせた上限 + バッファ（クロール上限超えのモデルも拾う）
+_MODELS_PER_TAG = LIMIT_PER_TAG + 50
+# config.py の TARGET_PIPELINE_TAGS から自動計算（手動同期不要）
+_N_PIPELINE_TAGS = len(TARGET_PIPELINE_TAGS)
 
 app = FastAPI(
     title="AI Model Tracker API",
@@ -69,7 +70,10 @@ def get_trending(
     if pipeline_tag:
         query = query.eq("pipeline_tag", pipeline_tag)
 
-    resp = query.execute()
+    try:
+        resp = query.execute()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Database unavailable") from e
     rows = resp.data
 
     # model_id ごとにスナップショットをまとめて likes の増分（最新 - 最古）を計算
@@ -119,7 +123,10 @@ def get_new(
     if pipeline_tag:
         query = query.eq("pipeline_tag", pipeline_tag)
 
-    resp = query.execute()
+    try:
+        resp = query.execute()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Database unavailable") from e
     return resp.data
 
 
@@ -133,14 +140,17 @@ def get_history(
     model_id uses path param to support 'author/model-name' format.
     """
     sb = get_supabase()
-    resp = (
-        sb.table("model_snapshots")
-        .select("snapshot_date, downloads_30d, likes, pipeline_tag, tags")
-        .eq("model_id", model_id)
-        .order("snapshot_date", desc=True)
-        .limit(limit)
-        .execute()
-    )
+    try:
+        resp = (
+            sb.table("model_snapshots")
+            .select("snapshot_date, downloads_30d, likes, pipeline_tag, tags")
+            .eq("model_id", model_id)
+            .order("snapshot_date", desc=True)
+            .limit(limit)
+            .execute()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Database unavailable") from e
     if not resp.data:
         raise HTTPException(status_code=404, detail=f"No snapshots found for model '{model_id}'")
     return resp.data
