@@ -159,6 +159,50 @@ def get_history(
     return resp.data
 
 
+@app.get("/arena/rankings")
+def get_arena_rankings(
+    limit: int = Query(50, ge=1, le=200, description="Max results"),
+    snapshot_date: Optional[str] = Query(None, description="Specific date (YYYY-MM-DD). Defaults to latest."),
+):
+    """
+    Return LMArena ELO rankings.
+    Defaults to the latest available snapshot date.
+    Source: lmarena-ai/lmarena-leaderboard HF Space (updated irregularly).
+    """
+    sb = get_supabase()
+
+    # 指定がなければ最新の snapshot_date を使用
+    if not snapshot_date:
+        try:
+            latest_resp = (
+                sb.table("arena_rankings")
+                .select("snapshot_date")
+                .order("snapshot_date", desc=True)
+                .limit(1)
+                .execute()
+            )
+        except Exception as e:
+            raise HTTPException(status_code=503, detail="Database unavailable") from e
+        if not latest_resp.data:
+            raise HTTPException(status_code=404, detail="No arena rankings data available yet")
+        snapshot_date = latest_resp.data[0]["snapshot_date"]
+
+    try:
+        resp = (
+            sb.table("arena_rankings")
+            .select("snapshot_date, model_name, rank, elo_score")
+            .eq("snapshot_date", snapshot_date)
+            .order("rank", desc=False)
+            .limit(limit)
+            .execute()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Database unavailable") from e
+    if not resp.data:
+        raise HTTPException(status_code=404, detail=f"No rankings found for {snapshot_date}")
+    return resp.data
+
+
 @app.get("/papers/recent")
 def get_recent_papers(
     category: Optional[str] = Query(None, description="Filter by arXiv category e.g. cs.AI"),
