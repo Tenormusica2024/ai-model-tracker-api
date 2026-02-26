@@ -22,6 +22,8 @@ from db import get_supabase
 _MODELS_PER_TAG = LIMIT_PER_TAG + 50
 # config.py の TARGET_PIPELINE_TAGS から自動計算（手動同期不要）
 _N_PIPELINE_TAGS = len(TARGET_PIPELINE_TAGS)
+# days=90 全タグ指定時でも Supabase への過大リクエストを防ぐ絶対上限
+_ROW_CAP_MAX = 20_000
 
 app = FastAPI(
     title="AI Model Tracker API",
@@ -58,7 +60,7 @@ def get_trending(
     # pipeline_tag 指定なし = 全タグが対象。タグ数分のモデルを見込んで行数上限を設定
     # days × (1タグのモデル数上限) × (対象タグ数) でウィンドウ内の全スナップを取得できる
     tag_multiplier = 1 if pipeline_tag else _N_PIPELINE_TAGS
-    row_cap = days * _MODELS_PER_TAG * tag_multiplier
+    row_cap = min(days * _MODELS_PER_TAG * tag_multiplier, _ROW_CAP_MAX)
 
     query = (
         sb.table("model_snapshots")
