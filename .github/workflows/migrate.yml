@@ -1,0 +1,67 @@
+name: Run DB Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      migration_file:
+        description: "Migration SQL file (e.g. 001_add_category_to_papers.sql)"
+        required: true
+        type: string
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run migration via Supabase Management API
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          MIGRATION_FILE: ${{ inputs.migration_file }}
+        run: |
+          python3 - <<'EOF'
+          import os
+          import sys
+          from pathlib import Path
+          import urllib.request
+          import urllib.error
+          import json
+
+          migration_file = os.environ["MIGRATION_FILE"]
+          sql_path = Path("sql/migrations") / migration_file
+
+          if not sql_path.exists():
+              print(f"ERROR: Migration file not found: {sql_path}", file=sys.stderr)
+              sys.exit(1)
+
+          sql = sql_path.read_text()
+          print(f"Executing: {sql_path}")
+
+          # SUPABASE_URL から project_ref を抽出
+          # e.g. https://abcdefgh.supabase.co -> abcdefgh
+          supabase_url = os.environ["SUPABASE_URL"]
+          project_ref = supabase_url.split("//")[1].split(".")[0]
+          access_token = os.environ["SUPABASE_ACCESS_TOKEN"]
+
+          url = f"https://api.supabase.com/v1/projects/{project_ref}/database/query"
+          payload = json.dumps({"query": sql}).encode()
+          req = urllib.request.Request(
+              url,
+              data=payload,
+              headers={
+                  "Authorization": f"Bearer {access_token}",
+                  "Content-Type": "application/json",
+              },
+              method="POST",
+          )
+          try:
+              with urllib.request.urlopen(req) as resp:
+                  print(f"Migration completed: {resp.status}")
+          except urllib.error.HTTPError as e:
+              body = e.read().decode()
+              print(f"ERROR {e.code}: {body}", file=sys.stderr)
+              sys.exit(1)
+          EOF

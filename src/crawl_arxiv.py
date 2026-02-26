@@ -109,6 +109,7 @@ def crawl(categories: list[str] = ARXIV_CATEGORIES) -> None:
 
         for paper in papers:
             try:
+                paper["category"] = category  # クロール元カテゴリを付与
                 upsert_paper(sb, paper)
                 total_papers += 1
             except Exception as e:

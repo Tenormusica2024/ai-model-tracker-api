@@ -173,15 +173,13 @@ def get_recent_papers(
     sb = get_supabase()
     query = (
         sb.table("papers")
-        .select("arxiv_id, title, authors, submitted_at, pwc_sota_flag")
+        .select("arxiv_id, title, authors, submitted_at, category, pwc_sota_flag")
         .gte("submitted_at", cutoff)
         .order("submitted_at", desc=True)
         .limit(limit)
     )
     if category:
-        # papers テーブルにカテゴリカラムはないが、将来の拡張のためパラメータは保持
-        # 現在は category 指定時も全件返す（フィルタ無効）
-        pass
+        query = query.eq("category", category)
 
     try:
         resp = query.execute()

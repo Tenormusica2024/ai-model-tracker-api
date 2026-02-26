@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS papers (
   abstract TEXT,
   submitted_at TIMESTAMPTZ,
   authors TEXT[],
+  category TEXT,                        -- arXiv カテゴリ (e.g. cs.AI, cs.LG)
   pwc_sota_flag BOOLEAN DEFAULT FALSE
 );
 
