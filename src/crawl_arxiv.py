@@ -86,13 +86,13 @@ def _parse_arxiv_xml(xml_text: str) -> list[dict]:
 
 def upsert_paper(sb: Client, paper: dict) -> None:
     """
-    papers テーブルに upsert する（初回登録のみ）
+    papers テーブルに upsert する
+    同一 arxiv_id は全フィールドを上書き（category 等の後付けカラムを更新するため）
     pwc_sota_flag は別バッチ（PapersWithCode 連携）で付与
     """
     sb.table("papers").upsert(
         paper,
         on_conflict="arxiv_id",
-        ignore_duplicates=True,
     ).execute()
 
 
