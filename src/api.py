@@ -22,7 +22,8 @@ from db import get_supabase
 _MODELS_PER_TAG = LIMIT_PER_TAG + 50
 # config.py の TARGET_PIPELINE_TAGS から自動計算（手動同期不要）
 _N_PIPELINE_TAGS = len(TARGET_PIPELINE_TAGS)
-# days=90 全タグ指定時でも Supabase への過大リクエストを防ぐ絶対上限
+# LIMIT_PER_TAG(200) × N_PIPELINE_TAGS(4) × days(25) 相当の絶対上限
+# 上限超えは trending 精度の低下と引き換えに DB 負荷を抑制する
 _ROW_CAP_MAX = 20_000
 
 app = FastAPI(

@@ -16,9 +16,10 @@ _client_lock = threading.Lock()
 
 def get_supabase() -> Client:
     global _client
-    with _client_lock:
-        if _client is None:
-            url = os.environ["SUPABASE_URL"]
-            key = os.environ["SUPABASE_KEY"]
-            _client = create_client(url, key)
+    if _client is None:          # 初期化後はロック不要（高速パス）
+        with _client_lock:
+            if _client is None:  # ロック後に再確認（double-checked locking）
+                url = os.environ["SUPABASE_URL"]
+                key = os.environ["SUPABASE_KEY"]
+                _client = create_client(url, key)
     return _client
