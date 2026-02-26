@@ -14,6 +14,7 @@ import xml.etree.ElementTree as ET
 import requests
 from supabase import Client
 
+from config import ARXIV_CATEGORIES, PAPERS_PER_CATEGORY, ERROR_RATE_THRESHOLD
 from db import get_supabase
 
 logging.basicConfig(
@@ -23,13 +24,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 ARXIV_API_URL = "http://export.arxiv.org/api/query"
-# 取得するカテゴリ（AI/ML 系）
-ARXIV_CATEGORIES = ["cs.AI", "cs.LG", "cs.CL", "cs.CV", "stat.ML"]
-# 1カテゴリあたりの取得件数
-PAPERS_PER_CATEGORY = 100
-
-# crawl() でエラー率がこの閾値を超えた場合に非ゼロ終了（GitHub Actions でアラートを出すため）
-ERROR_RATE_THRESHOLD = 0.1
 
 # Atom XML 名前空間
 _NS = {
@@ -64,25 +58,29 @@ def _parse_arxiv_xml(xml_text: str) -> list[dict]:
     root = ET.fromstring(xml_text)
     papers = []
     for entry in root.findall("atom:entry", _NS):
-        # http://arxiv.org/abs/2301.00234v1 → 2301.00234（バージョン番号を除去）
-        id_url = entry.find("atom:id", _NS).text
-        arxiv_id = id_url.split("/abs/")[-1].rsplit("v", 1)[0]
+        try:
+            # http://arxiv.org/abs/2301.00234v1 → 2301.00234（バージョン番号を除去）
+            id_url = entry.find("atom:id", _NS).text
+            arxiv_id = id_url.split("/abs/")[-1].rsplit("v", 1)[0]
 
-        title = entry.find("atom:title", _NS).text.strip().replace("\n", " ")
-        abstract = entry.find("atom:summary", _NS).text.strip().replace("\n", " ")
-        submitted_at = entry.find("atom:published", _NS).text
+            title = entry.find("atom:title", _NS).text.strip().replace("\n", " ")
+            abstract = entry.find("atom:summary", _NS).text.strip().replace("\n", " ")
+            submitted_at = entry.find("atom:published", _NS).text
 
-        authors = [
-            a.find("atom:name", _NS).text
-            for a in entry.findall("atom:author", _NS)
-        ]
-        papers.append({
-            "arxiv_id": arxiv_id,
-            "title": title,
-            "abstract": abstract,
-            "submitted_at": submitted_at,
-            "authors": authors,
-        })
+            authors = [
+                a.find("atom:name", _NS).text
+                for a in entry.findall("atom:author", _NS)
+            ]
+            papers.append({
+                "arxiv_id": arxiv_id,
+                "title": title,
+                "abstract": abstract,
+                "submitted_at": submitted_at,
+                "authors": authors,
+            })
+        except (AttributeError, TypeError) as e:
+            # 必須フィールド欠損のエントリは個別スキップ（他エントリへの影響なし）
+            logger.warning(f"Skipping malformed entry: {e}")
     return papers
 
 

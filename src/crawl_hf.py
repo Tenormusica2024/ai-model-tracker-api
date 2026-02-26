@@ -14,7 +14,7 @@ from datetime import date
 import requests
 from supabase import Client
 
-from config import TARGET_PIPELINE_TAGS, LIMIT_PER_TAG
+from config import TARGET_PIPELINE_TAGS, LIMIT_PER_TAG, ERROR_RATE_THRESHOLD
 from db import get_supabase
 
 logging.basicConfig(
@@ -24,9 +24,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 HF_API_BASE = "https://huggingface.co/api"
-
-# crawl() でエラー率がこの閾値を超えた場合に非ゼロ終了（GitHub Actions でアラートを出すため）
-ERROR_RATE_THRESHOLD = 0.1
 
 
 def fetch_hf_models(pipeline_tag: str, limit: int = LIMIT_PER_TAG) -> list[dict]:
