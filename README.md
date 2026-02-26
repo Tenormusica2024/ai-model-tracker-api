@@ -148,12 +148,41 @@ GET /papers/recent?category=cs.AI&days=3&limit=5
 
 ---
 
+### `GET /arena/rankings`
+
+Returns LMArena ELO rankings from the latest available snapshot.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `limit` | int | 50 | Max results (1–200) |
+| `snapshot_date` | string | — | Specific date (YYYY-MM-DD). Defaults to latest. |
+
+```
+GET /arena/rankings?limit=10
+```
+
+```json
+[
+  {
+    "snapshot_date": "2025-08-29",
+    "model_name": "gemini-2.5-pro",
+    "rank": 1,
+    "elo_score": 1466
+  }
+]
+```
+
+**Note**: Source data (`lmarena-ai/lmarena-leaderboard` HF Space) is updated irregularly. Latest available snapshot: 2025-08-29.
+
+---
+
 ## Architecture
 
 ```
 GitHub Actions (daily, UTC 00:00 / JST 09:00)
   ├── crawl_hf.py     → HuggingFace Hub API → models / model_snapshots (Supabase)
-  └── crawl_arxiv.py  → arXiv Atom XML API  → papers (Supabase)
+  ├── crawl_arxiv.py  → arXiv Atom XML API  → papers (Supabase)
+  └── crawl_arena.py  → lmarena-ai HF Space → arena_rankings (Supabase)
 
 Railway (FastAPI + uvicorn)
   └── Serves API requests from Supabase
