@@ -1,4 +1,4 @@
-name: Daily HF Model Crawl
+name: Daily AI Data Crawl
 
 on:
   # Run daily at UTC 00:00 (JST 09:00)
@@ -28,4 +28,12 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          PYTHONPATH: src
         run: python src/crawl_hf.py
+
+      - name: Run arXiv crawl
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          PYTHONPATH: src
+        run: python src/crawl_arxiv.py
