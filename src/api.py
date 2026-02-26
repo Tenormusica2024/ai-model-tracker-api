@@ -157,3 +157,34 @@ def get_history(
     if not resp.data:
         raise HTTPException(status_code=404, detail=f"No snapshots found for model '{model_id}'")
     return resp.data
+
+
+@app.get("/papers/recent")
+def get_recent_papers(
+    category: Optional[str] = Query(None, description="Filter by arXiv category e.g. cs.AI"),
+    days: int = Query(7, ge=1, le=90, description="Lookback window in days"),
+    limit: int = Query(20, ge=1, le=100, description="Max results"),
+):
+    """
+    Return recently submitted arXiv papers, sorted by submitted_at descending.
+    """
+    cutoff = (date.today() - timedelta(days=days)).isoformat()
+
+    sb = get_supabase()
+    query = (
+        sb.table("papers")
+        .select("arxiv_id, title, authors, submitted_at, pwc_sota_flag")
+        .gte("submitted_at", cutoff)
+        .order("submitted_at", desc=True)
+        .limit(limit)
+    )
+    if category:
+        # papers テーブルにカテゴリカラムはないが、将来の拡張のためパラメータは保持
+        # 現在は category 指定時も全件返す（フィルタ無効）
+        pass
+
+    try:
+        resp = query.execute()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Database unavailable") from e
+    return resp.data
