@@ -1,8 +1,8 @@
-# AI Model Tracker API
+# HuggingFace Daily Insights API
 
 Track trending AI models on HuggingFace and recent arXiv papers via a REST API — with **historical time-series data** that the official HuggingFace API does not provide.
 
-**Available on RapidAPI**: https://rapidapi.com/dragonrondo/api/huggingface-ai-model-tracker
+**Available on RapidAPI**: https://rapidapi.com/dragonrondo/api/huggingface-daily-insights-api
 
 **Base URL**: https://web-production-af174.up.railway.app
 
@@ -212,4 +212,4 @@ Railway (FastAPI + uvicorn)
 | Free | $0 | 100 requests/month |
 | PRO | $9/month | 1,000 requests/month |
 
-https://rapidapi.com/dragonrondo/api/huggingface-ai-model-tracker
+https://rapidapi.com/dragonrondo/api/huggingface-daily-insights-api

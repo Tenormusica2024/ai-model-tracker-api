@@ -27,8 +27,8 @@ _N_PIPELINE_TAGS = len(TARGET_PIPELINE_TAGS)
 _ROW_CAP_MAX = 20_000
 
 app = FastAPI(
-    title="AI Model Tracker API",
-    description="Track trending AI models on HuggingFace with historical data",
+    title="HuggingFace Daily Insights API",
+    description="Daily insights on HuggingFace models, arXiv papers, and LMArena rankings with historical time-series data",
     version="0.1.0",
 )
 
