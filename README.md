@@ -42,18 +42,34 @@ Returns models ranked by likes increase over the past N days.
 | `limit` | int | 20 | Max results (1–100) |
 
 ```
-GET /models/trending?pipeline_tag=text-generation&days=7&limit=5
+GET /models/trending?days=7&limit=3
 ```
 
 ```json
 [
   {
-    "model_id": "Qwen/Qwen2.5-7B-Instruct",
+    "model_id": "Nanbeige/Nanbeige4.1-3B",
     "pipeline_tag": "text-generation",
-    "likes_latest": 4821,
-    "likes_delta": 312,
-    "snapshot_date_from": "2026-02-19",
-    "snapshot_date_to": "2026-02-26"
+    "likes_latest": 811,
+    "likes_delta": 33,
+    "snapshot_date_from": "2026-02-24",
+    "snapshot_date_to": "2026-02-27"
+  },
+  {
+    "model_id": "google/translategemma-4b-it",
+    "pipeline_tag": "image-text-to-text",
+    "likes_latest": 643,
+    "likes_delta": 12,
+    "snapshot_date_from": "2026-02-24",
+    "snapshot_date_to": "2026-02-27"
+  },
+  {
+    "model_id": "stabilityai/stable-diffusion-xl-base-1.0",
+    "pipeline_tag": "text-to-image",
+    "likes_latest": 7473,
+    "likes_delta": 8,
+    "snapshot_date_from": "2026-02-24",
+    "snapshot_date_to": "2026-02-27"
   }
 ]
 ```
@@ -73,17 +89,31 @@ Returns models first seen within the past N days.
 | `limit` | int | 20 | Max results (1–100) |
 
 ```
-GET /models/new?days=3&limit=5
+GET /models/new?days=4&limit=3
 ```
 
 ```json
 [
   {
-    "id": "Qwen/Qwen3.5-7B",
-    "name": "Qwen3.5-7B",
+    "id": "unsloth/Qwen3.5-35B-A3B-GGUF",
+    "name": "Qwen3.5-35B-A3B-GGUF",
+    "author": "unsloth",
+    "pipeline_tag": "image-text-to-text",
+    "first_seen_at": "2026-02-26T01:02:11.396791+00:00"
+  },
+  {
+    "id": "Qwen/Qwen3.5-27B",
+    "name": "Qwen3.5-27B",
     "author": "Qwen",
-    "pipeline_tag": "text-generation",
-    "first_seen_at": "2026-02-25"
+    "pipeline_tag": "image-text-to-text",
+    "first_seen_at": "2026-02-25T01:10:33.171452+00:00"
+  },
+  {
+    "id": "Qwen/Qwen3.5-122B-A10B",
+    "name": "Qwen3.5-122B-A10B",
+    "author": "Qwen",
+    "pipeline_tag": "image-text-to-text",
+    "first_seen_at": "2026-02-25T01:10:27.512855+00:00"
   }
 ]
 ```
@@ -100,17 +130,31 @@ Returns daily snapshots for a specific model (likes, downloads, tags over time).
 | `limit` | int | 30 | Max snapshot records (1–180) |
 
 ```
-GET /models/Qwen/Qwen2.5-7B-Instruct/history?limit=7
+GET /models/Nanbeige/Nanbeige4.1-3B/history?limit=3
 ```
 
 ```json
 [
   {
-    "snapshot_date": "2026-02-26",
-    "downloads_30d": 128453,
-    "likes": 4821,
+    "snapshot_date": "2026-02-27",
+    "downloads_30d": 255172,
+    "likes": 811,
     "pipeline_tag": "text-generation",
-    "tags": ["transformers", "pytorch", "safetensors"]
+    "tags": ["transformers", "safetensors", "llama", "text-generation", "llm", "conversational"]
+  },
+  {
+    "snapshot_date": "2026-02-26",
+    "downloads_30d": 255172,
+    "likes": 805,
+    "pipeline_tag": "text-generation",
+    "tags": ["transformers", "safetensors", "llama", "text-generation", "llm", "conversational"]
+  },
+  {
+    "snapshot_date": "2026-02-25",
+    "downloads_30d": 202462,
+    "likes": 778,
+    "pipeline_tag": "text-generation",
+    "tags": ["transformers", "safetensors", "llama", "text-generation", "llm", "conversational"]
   }
 ]
 ```
@@ -128,17 +172,25 @@ Returns recently submitted arXiv papers in AI/ML.
 | `limit` | int | 20 | Max results (1–100) |
 
 ```
-GET /papers/recent?category=cs.AI&days=3&limit=5
+GET /papers/recent?category=cs.CV&days=3&limit=2
 ```
 
 ```json
 [
   {
-    "arxiv_id": "2602.22149",
-    "title": "Enhancing Framingham Cardiovascular Risk Score Transparency through Logic-Based XAI",
-    "authors": ["Emannuel L. de A. Bezerra", "..."],
-    "submitted_at": "2026-02-25T17:58:11+00:00",
-    "category": "cs.AI",
+    "arxiv_id": "2602.22212",
+    "title": "Neu-PiG: Neural Preconditioned Grids for Fast Dynamic Surface Reconstruction on Long Sequences",
+    "authors": ["Julian Kaltheuner", "Hannah Dröge", "Markus Plack", "Patrick Stotko", "Reinhard Klein"],
+    "submitted_at": "2026-02-25T18:59:53+00:00",
+    "category": "cs.CV",
+    "pwc_sota_flag": false
+  },
+  {
+    "arxiv_id": "2602.22209",
+    "title": "WHOLE: World-Grounded Hand-Object Lifted from Egocentric Videos",
+    "authors": ["Yufei Ye", "Jiaman Li", "Ryan Rong", "C. Karen Liu"],
+    "submitted_at": "2026-02-25T18:59:10+00:00",
+    "category": "cs.CV",
     "pwc_sota_flag": false
   }
 ]
